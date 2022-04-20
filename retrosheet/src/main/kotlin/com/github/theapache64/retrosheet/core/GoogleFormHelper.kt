@@ -1,6 +1,7 @@
 package com.github.theapache64.retrosheet.core
 
 import com.github.theapache64.retrosheet.RetrosheetInterceptor
+import com.github.theapache64.retrosheet.annotations.Change
 import com.github.theapache64.retrosheet.annotations.Write
 import com.github.theapache64.retrosheet.utils.MoshiUtils
 import com.squareup.moshi.Types
@@ -43,11 +44,17 @@ class GoogleFormHelper(
             MoshiUtils.moshi.adapter(Any::class.java)
         }
 
+        private val Request.isWrite
+            get() = tag(Invocation::class.java)?.method()?.getAnnotation(Write::class.java) != null
+
+        private val Request.isChange
+            get() = tag(Invocation::class.java)?.method()?.getAnnotation(Change::class.java) != null
+
         fun isGoogleFormSubmit(request: Request): Boolean {
-            val isForm = (request.tag(Invocation::class.java)?.method()?.getAnnotation(Write::class.java) != null)
+            val isForm = (request.isWrite || request.isChange)
             val requestMethod = request.method()
             if (isForm && requestMethod != "POST") {
-                throw IllegalArgumentException("@Write should be always @POST, found @$requestMethod")
+                throw IllegalArgumentException("@Write or @Change should be always @POST, found @$requestMethod")
             }
             return isForm
         }
